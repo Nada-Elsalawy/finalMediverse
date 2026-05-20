@@ -1,0 +1,49 @@
+@import "tailwindcss";
+@plugin './hero.js';
+/* Note: You may need to change the path to fit your project structure */
+@source '../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+@custom-variant dark (&:is(.dark *));
+.active{
+    color: #425d7b; /**/
+    font-size: large;
+    font-weight: 500;
+}
+
+@theme {
+  --color-main:rgb(77, 98, 105);
+    --color-babyblue :#6DAAE1;
+    --color-azraq:#010165;
+    --color-mint:#1a4578;
+    --color-mint-100:#b1c5d0;
+    --color-azraq-300:#5DA1DE;
+    --color-azraq-400:#224D7F;/**/
+    --color-mint-400:#899fb0;
+    --color-mint-500:#95b9d0;
+    --color-mint-600:#517e9d;
+    --color-mint-700:#425562;
+    --color-mint-200:rgb(70,90, 100);
+    --color-mint-100:#a8b8c5;
+--color-azraq-500:#5593CA;
+--color-babyBlue:#eef6fc;
+
+}
+@layer utilities {
+    .container {
+        @apply mx-auto
+    }
+}
+@layer base{
+    h1{
+        @apply text-[38px] font-bold ;
+        /* font-family: "Pacifico", cursive;
+        font-weight: 400;
+  font-style: bold;
+  font-size: 40px; */
+    }
+     h2{
+        @apply text-[33px] font-bold;
+    }
+     h3{
+        @apply text-[30px] font-semibold;
+    }
+}

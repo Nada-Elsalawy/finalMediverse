@@ -1,0 +1,16 @@
+.leftLine{
+    width: 80px; 
+    height: 4px;
+    background-color:#1a4578;
+}
+.rightLine{
+     width: 80px; 
+    height: 4px;
+    background-color:#1a4578;
+}
+.underLine {display: flex;
+justify-content: center;
+align-items: center;
+margin-top: 0px;
+gap: 15px;
+}

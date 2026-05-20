@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prescription Scanner - MediVerse</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #1a2744;
+            --navy-light: #234a78;
+            --blue: #5d9ed0;
+            --blue-pale: #e8f1fa;
+            --mint: #00c9a7;
+            --mint-pale: #e6faf5;
+            --red: #e53935;
+            --red-pale: #fde8e8;
+            --orange: #f57c00;
+            --orange-pale: #fff3e0;
+            --yellow: #fdd835;
+            --green: #2e7d32;
+            --green-pale: #e8f5e9;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-300: #cbd5e1;
+            --gray-500: #64748b;
+            --gray-700: #334155;
+            --gray-900: #0f172a;
+            --radius: 14px;
+            --shadow: 0 2px 16px rgba(26,39,68,.06);
+            --shadow-lg: 0 8px 30px rgba(26,39,68,.12);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; background: var(--gray-50); color: var(--gray-900); min-height: 100vh; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Animations */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes slideRight { from { width: 0%; } to { width: var(--w); } }
+        .fade-up { animation: fadeUp .5s ease-out both; }
+        .fade-in { animation: fadeIn .4s ease-out both; }
+        .pulse { animation: pulse 2s ease-in-out infinite; }
+
+        .spinner { animation: spin .7s linear infinite; border: 3px solid var(--blue-pale); border-top-color: var(--navy); border-radius: 50%; width: 22px; height: 22px; display: inline-block; vertical-align: middle; }
+        .spinner-lg { width: 44px; height: 44px; border-width: 4px; }
+
+        /* Skeleton loader */
+        .skeleton { background: linear-gradient(90deg, var(--gray-100) 25%, #e2e8f0 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; height: 20px; }
+
+        /* Cards */
+        .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+
+        /* Buttons */
+        .btn { border: none; border-radius: 10px; padding: 12px 28px; font-family: 'Cairo'; font-weight: 700; font-size: 15px; cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--navy); color: #fff; }
+        .btn-primary:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+        .btn-primary:disabled { background: var(--gray-300); cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-outline { background: transparent; color: var(--navy); border: 2px solid var(--gray-300); }
+        .btn-outline:hover { border-color: var(--navy); background: var(--blue-pale); }
+        .btn-mint { background: var(--mint); color: #fff; }
+        .btn-mint:hover { background: #00b396; }
+
+        /* Input */
+        .input { width: 100%; border: 2px solid var(--gray-300); border-radius: 10px; padding: 12px 16px; font-family: 'Cairo'; font-size: 15px; outline: none; transition: border-color .2s; direction: ltr; text-align: left; }
+        .input:focus { border-color: var(--blue); }
+
+        /* Drop zone */
+        .drop-zone { border: 3px dashed var(--gray-300); border-radius: 16px; padding: 48px 24px; text-align: center; cursor: pointer; transition: all .3s; position: relative; overflow: hidden; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--mint); background: var(--mint-pale); }
+        .drop-zone.has-image { border-style: solid; border-color: var(--mint); padding: 12px; }
+
+        /* Risk badges */
+        .risk-safe { background: var(--green-pale); color: var(--green); }
+        .risk-low_risk { background: #e8f5e9; color: #558b2f; }
+        .risk-moderate_risk { background: var(--orange-pale); color: var(--orange); }
+        .risk-high_risk { background: var(--red-pale); color: var(--red); }
+        .risk-critical { background: #b71c1c; color: #fff; }
+
+        /* Severity */
+        .sev-mild { color: #558b2f; }
+        .sev-moderate { color: var(--orange); }
+        .sev-severe { color: var(--red); }
+        .sev-critical { color: #b71c1c; font-weight: 800; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+        /* Toast */
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; padding: 12px 28px; border-radius: 12px; color: #fff; font-weight: 700; box-shadow: var(--shadow-lg); animation: fadeUp .3s ease-out; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ═══════════════════════════════════════════════════════════
+//  ⚙️  CONFIG — غيّر الـ URL هنا لما الـ ngrok يتغير
+// ═══════════════════════════════════════════════════════════
+const API_URL = "http://127.0.0.1:8004";
+// ═══════════════════════════════════════════════════════════
+
+// ═══ HEADER ═══
+const Header = () => (
+    <div style={{ background: 'linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%)', padding: '20px 0', marginBottom: 28 }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 46, height: 46, background: 'rgba(255,255,255,.15)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>💊</div>
+                <div>
+                    <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 800, margin: 0, lineHeight: 1.2 }}>MediVerse</h1>
+                    <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, margin: 0, fontWeight: 600 }}>Prescription Scanner</p>
+                </div>
+            </div>
+            <div></div>
+        </div>
+    </div>
+);
+
+// ═══ UPLOAD SECTION ═══
+const UploadSection = ({ onAnalyze, loading }) => {
+    const [file, setFile] = useState(null);
+    const [preview, setPreview] = useState(null);
+    const [patientId, setPatientId] = useState("");
+    const [dragover, setDragover] = useState(false);
+    const inputRef = useRef(null);
+
+    const handleFile = (f) => {
+        if (!f || !f.type.startsWith("image/")) return;
+        setFile(f);
+        const reader = new FileReader();
+        reader.onload = (e) => setPreview(e.target.result);
+        reader.readAsDataURL(f);
+    };
+
+    const handleDrop = (e) => { e.preventDefault(); setDragover(false); handleFile(e.dataTransfer.files[0]); };
+    const handleDragOver = (e) => { e.preventDefault(); setDragover(true); };
+    const handleDragLeave = () => setDragover(false);
+
+    const handleSubmit = () => {
+        if (!file) return;
+        onAnalyze(file, 1);
+    };
+
+    return (
+        <div className="card fade-up" style={{ padding: 28, marginBottom: 24 }}>
+            {/* Drop Zone */}
+            <div className={`drop-zone ${dragover ? 'dragover' : ''} ${preview ? 'has-image' : ''}`}
+                onClick={() => inputRef.current?.click()}
+                onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}>
+                <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                    onChange={(e) => handleFile(e.target.files[0])} />
+                {preview ? (
+                    <div style={{ position: 'relative' }}>
+                        <img src={preview} alt="Prescription" style={{ maxHeight: 280, maxWidth: '100%', borderRadius: 10, objectFit: 'contain' }} />
+                        <button onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(null); }}
+                            style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                    </div>
+                ) : (
+                    <>
+                        <div style={{ fontSize: 52, marginBottom: 8, opacity: .7 }}>📋</div>
+                        <p style={{ color: '#1a2744', fontSize: 16, fontWeight: 700, marginBottom: 4 }}>ارفع صورة الروشتة</p>
+                        <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>اسحب الصورة هنا أو اضغط للاختيار</p>
+                    </>
+                )}
+            </div>
+
+            {/* Submit Button */}
+            <div style={{ marginTop: 18, textAlign: 'center' }}>
+                <button className="btn btn-primary" onClick={handleSubmit} disabled={!file || loading}
+                    style={{ minWidth: 200, justifyContent: 'center', height: 48 }}>
+                    {loading ? <><span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }}></span> جاري التحليل...</>
+                        : <>🔍 حلّل الروشتة</>}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// ═══ LOADING STATE ═══
+const LoadingState = ({ step }) => (
+    <div className="card fade-in" style={{ padding: '48px 28px', textAlign: 'center' }}>
+        <div className="spinner spinner-lg pulse" style={{ margin: '0 auto 20px' }}></div>
+        <h3 style={{ color: 'var(--navy)', fontSize: 18, fontWeight: 800, marginBottom: 8 }}>
+            {step === 1 ? "📷 Step 1: قراءة الروشتة..." : "🧪 Step 2: تحليل الأدوية..."}
+        </h3>
+        <p style={{ color: 'var(--gray-500)', fontSize: 14 }}>
+            جاري تحليل الروشتة...
+        </p>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 20 }}>
+            {[1, 2].map(s => (
+                <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 20,
+                    background: step >= s ? 'var(--mint-pale)' : 'var(--gray-100)',
+                    color: step >= s ? 'var(--mint)' : 'var(--gray-500)', fontWeight: 700, fontSize: 13 }}>
+                    {step > s ? '✓' : step === s ? <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2, borderTopColor: 'var(--mint)' }}></span> : s}
+                    {s === 1 ? ' OCR' : ' Analysis'}
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+// ═══ OCR INFO BAR ═══
+const OcrBar = ({ ocr }) => (
+    <div className="card fade-up" style={{ padding: '14px 20px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, borderRight: '4px solid var(--blue)' }}>
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 13 }}>
+            {ocr.doctor_name && <span style={{ color: 'var(--gray-700)' }}>👨‍⚕️ <strong>{ocr.doctor_name}</strong></span>}
+            {ocr.date && <span className="mono" style={{ color: 'var(--gray-500)' }}>📅 {ocr.date}</span>}
+            <span style={{ color: 'var(--gray-500)' }}>💊 {ocr.medications_raw?.length || 0} أدوية مقروءة</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: 'var(--gray-500)' }}>OCR Confidence:</span>
+            <span style={{ padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700,
+                background: ocr.confidence === 'high' ? 'var(--green-pale)' : ocr.confidence === 'medium' ? 'var(--orange-pale)' : 'var(--red-pale)',
+                color: ocr.confidence === 'high' ? 'var(--green)' : ocr.confidence === 'medium' ? 'var(--orange)' : 'var(--red)' }}>
+                {ocr.confidence}
+            </span>
+        </div>
+    </div>
+);
+
+// ═══ RISK BANNER ═══
+const RiskBanner = ({ level, summaryAr }) => {
+    const config = {
+        safe: { icon: '✅', label: 'آمن', bg: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)' },
+        low_risk: { icon: '🟢', label: 'خطورة منخفضة', bg: 'linear-gradient(135deg, #e8f5e9, #dcedc8)' },
+        moderate_risk: { icon: '⚠️', label: 'خطورة متوسطة', bg: 'linear-gradient(135deg, #fff3e0, #ffe0b2)' },
+        high_risk: { icon: '🔴', label: 'خطورة عالية', bg: 'linear-gradient(135deg, #fde8e8, #ffcdd2)' },
+        critical: { icon: '🚨', label: 'خطورة حرجة!', bg: 'linear-gradient(135deg, #b71c1c, #c62828)' },
+    };
+    const c = config[level] || config.safe;
+    const isCritical = level === 'critical' || level === 'high_risk';
+
+    return (
+        <div className="fade-up" style={{ background: c.bg, borderRadius: 'var(--radius)', padding: '18px 24px', marginBottom: 20,
+            color: isCritical && level === 'critical' ? '#fff' : 'var(--gray-900)', boxShadow: 'var(--shadow)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                <span style={{ fontSize: 28 }}>{c.icon}</span>
+                <h2 style={{ fontSize: 20, fontWeight: 800 }}>مستوى الخطورة: {c.label}</h2>
+            </div>
+            {summaryAr && <p style={{ fontSize: 14, opacity: .85, lineHeight: 1.7 }}>{summaryAr}</p>}
+        </div>
+    );
+};
+
+// ═══ MEDICATION CARD ═══
+const MedCard = ({ med, index }) => {
+    const [expanded, setExpanded] = useState(false);
+    const corrected = med.ocr_name !== med.corrected_name;
+
+    return (
+        <div className="card fade-up" style={{ marginBottom: 12, animationDelay: `${index * .07}s`, border: !med.is_safe ? '2px solid var(--red)' : '2px solid transparent' }}>
+            {/* Header */}
+            <div onClick={() => setExpanded(!expanded)} style={{ padding: '16px 20px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 10, background: med.is_safe ? 'var(--blue-pale)' : 'var(--red-pale)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                        {med.is_safe ? '💊' : '⚠️'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <h3 className="mono" style={{ fontSize: 16, fontWeight: 700, color: 'var(--navy)', margin: 0, direction: 'ltr' }}>
+                                {med.corrected_name}
+                            </h3>
+                            {corrected && (
+                                <span style={{ fontSize: 11, color: 'var(--orange)', fontWeight: 600, background: 'var(--orange-pale)', padding: '2px 8px', borderRadius: 4 }}>
+                                    تم التصحيح من: {med.ocr_name}
+                                </span>
+                            )}
+                        </div>
+                        <p style={{ color: 'var(--gray-500)', fontSize: 13, margin: '2px 0 0' }}>{med.arabic_name} — {med.active_ingredient}</p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <div className="mono" style={{ textAlign: 'left', direction: 'ltr' }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>{med.dosage}</span>
+                        {med.dosage_source === 'suggested' && <span style={{ fontSize: 10, color: 'var(--orange)', display: 'block' }}>مقترحة</span>}
+                    </div>
+                    <span style={{ transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0)', fontSize: 14, color: 'var(--gray-500)' }}>▼</span>
+                </div>
+            </div>
+
+            {/* Expanded Details */}
+            {expanded && (
+                <div className="fade-in" style={{ padding: '0 20px 18px', borderTop: '1px solid var(--gray-100)' }}>
+                    <div style={{ paddingTop: 14 }}>
+                        {/* Description */}
+                        <p style={{ color: 'var(--gray-700)', fontSize: 14, lineHeight: 1.7, marginBottom: 14, background: 'var(--gray-50)', padding: '10px 14px', borderRadius: 8 }}>
+                            {med.description_ar}
+                        </p>
+
+                        {/* Details Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 10 }}>
+                            {[
+                                { label: 'الجرعة', value: med.dosage, source: med.dosage_source },
+                                { label: 'عدد المرات', value: med.frequency, source: med.frequency_source },
+                                { label: 'المدة', value: med.duration || 'غير محدد' },
+                                { label: 'طريقة الاستخدام', value: med.route },
+                            ].map((d, i) => (
+                                <div key={i} style={{ background: 'var(--gray-50)', padding: '8px 12px', borderRadius: 8 }}>
+                                    <p style={{ fontSize: 11, color: 'var(--gray-500)', fontWeight: 600, marginBottom: 2 }}>{d.label}</p>
+                                    <p className="mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)', margin: 0, direction: 'ltr', textAlign: 'left' }}>{d.value}</p>
+                                    {d.source === 'suggested' && <span style={{ fontSize: 10, color: 'var(--orange)' }}>⚡ مقترحة</span>}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Warnings */}
+                        {med.warnings && med.warnings.length > 0 && (
+                            <div style={{ background: 'var(--orange-pale)', padding: '10px 14px', borderRadius: 8, borderRight: '4px solid var(--orange)' }}>
+                                <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)', marginBottom: 4 }}>⚠️ تحذيرات:</p>
+                                {med.warnings.map((w, i) => <p key={i} style={{ fontSize: 13, color: 'var(--gray-700)', margin: '2px 0' }}>• {w}</p>)}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ═══ INTERACTION CARD ═══
+const InteractionCard = ({ interaction, index }) => (
+    <div className="card fade-up" style={{ padding: 18, marginBottom: 10, animationDelay: `${index * .08}s`,
+        borderRight: `4px solid ${interaction.severity === 'critical' ? 'var(--red)' : interaction.severity === 'severe' ? 'var(--red)' : interaction.severity === 'moderate' ? 'var(--orange)' : 'var(--green)'}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 18 }}>{interaction.severity === 'critical' || interaction.severity === 'severe' ? '🚨' : interaction.severity === 'moderate' ? '⚠️' : 'ℹ️'}</span>
+                <div>
+                    <span className={`sev-${interaction.severity}`} style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase' }}>{interaction.severity}</span>
+                    <span style={{ fontSize: 12, color: 'var(--gray-500)', marginRight: 8 }}> · {interaction.type.replace('_', '-')}</span>
+                </div>
+            </div>
+            <div className="mono" style={{ display: 'flex', gap: 6, direction: 'ltr' }}>
+                {interaction.drugs_involved?.map((d, i) => (
+                    <span key={i} style={{ background: 'var(--blue-pale)', color: 'var(--navy)', padding: '2px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>{d}</span>
+                ))}
+            </div>
+        </div>
+        <p style={{ fontSize: 14, color: 'var(--gray-700)', lineHeight: 1.7, marginBottom: 6 }}>{interaction.description_ar}</p>
+        <p style={{ fontSize: 13, color: 'var(--navy)', fontWeight: 700 }}>💡 {interaction.recommendation_ar}</p>
+        {interaction.alternative && (
+            <p style={{ fontSize: 13, color: 'var(--mint)', fontWeight: 700, marginTop: 4 }}>🔄 بديل مقترح: {interaction.alternative}</p>
+        )}
+    </div>
+);
+
+// ═══ RESULTS VIEW ═══
+const ResultsView = ({ data, onReset }) => {
+    const { ocr, analysis } = data;
+
+    if (!analysis || !analysis.success) {
+        return (
+            <div className="card fade-up" style={{ padding: 30, textAlign: 'center' }}>
+                <p style={{ fontSize: 32, marginBottom: 10 }}>❌</p>
+                <h3 style={{ color: 'var(--red)', marginBottom: 8 }}>فشل التحليل</h3>
+                <p style={{ color: 'var(--gray-500)', fontSize: 14, marginBottom: 20 }}>{analysis?.error || 'حدث خطأ أثناء تحليل الروشتة'}</p>
+                {analysis?.raw_text && (
+                    <details style={{ textAlign: 'left', direction: 'ltr', background: 'var(--gray-50)', padding: 14, borderRadius: 8, marginBottom: 16 }}>
+                        <summary style={{ cursor: 'pointer', fontSize: 13, color: 'var(--gray-500)' }}>Raw Response</summary>
+                        <pre className="mono" style={{ fontSize: 11, whiteSpace: 'pre-wrap', marginTop: 8 }}>{analysis.raw_text}</pre>
+                    </details>
+                )}
+                <button className="btn btn-primary" onClick={onReset}>🔄 حاول تاني</button>
+            </div>
+        );
+    }
+
+    const meds = analysis.medications || [];
+    const interactions = analysis.interactions || [];
+    const safeMeds = analysis.safe_medications || [];
+
+    return (
+        <div>
+            {/* OCR Bar */}
+            {ocr && <OcrBar ocr={ocr} />}
+
+            {/* Raw Notes */}
+            {ocr?.raw_notes && (
+                <div className="card fade-up" style={{ padding: '12px 18px', marginBottom: 16, background: '#fffde7', borderRight: '4px solid var(--yellow)' }}>
+                    <p style={{ fontSize: 13, color: 'var(--gray-700)' }}>📝 <strong>ملاحظات من الروشتة:</strong> {ocr.raw_notes}</p>
+                </div>
+            )}
+
+            {/* Risk Banner */}
+            <RiskBanner level={analysis.overall_risk_level} summaryAr={analysis.summary_ar} />
+
+            {/* Patient Info */}
+            {analysis.patient_name && (
+                <div className="card fade-up" style={{ padding: '12px 18px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 20 }}>👤</span>
+                    <span style={{ fontWeight: 700, color: 'var(--navy)' }}>المريض: {analysis.patient_name}</span>
+                    <span className="mono" style={{ color: 'var(--gray-500)', fontSize: 12 }}>ID: {analysis.patient_id}</span>
+                </div>
+            )}
+
+            {/* Medications */}
+            <div style={{ marginBottom: 24 }}>
+                <h2 style={{ color: 'var(--navy)', fontSize: 18, fontWeight: 800, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    💊 الأدوية <span className="mono" style={{ fontSize: 14, color: 'var(--blue)', fontWeight: 600 }}>({meds.length})</span>
+                </h2>
+                {meds.map((m, i) => <MedCard key={i} med={m} index={i} />)}
+            </div>
+
+            {/* Interactions */}
+            {interactions.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                    <h2 style={{ color: 'var(--navy)', fontSize: 18, fontWeight: 800, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        ⚡ التعارضات <span className="mono" style={{ fontSize: 14, color: 'var(--red)', fontWeight: 600 }}>({interactions.length})</span>
+                    </h2>
+                    {interactions.map((int, i) => <InteractionCard key={i} interaction={int} index={i} />)}
+                </div>
+            )}
+
+            {interactions.length === 0 && (
+                <div className="card fade-up" style={{ padding: 24, textAlign: 'center', marginBottom: 24, background: 'var(--green-pale)' }}>
+                    <p style={{ fontSize: 28, marginBottom: 4 }}>✅</p>
+                    <p style={{ color: 'var(--green)', fontWeight: 700, fontSize: 15 }}>لا توجد تعارضات بين الأدوية</p>
+                </div>
+            )}
+
+            {/* Models Used */}
+            <div className="card fade-up" style={{ padding: '12px 18px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 14, fontSize: 12, color: 'var(--gray-500)' }}>
+                    <span>📷 OCR: <strong className="mono">{ocr?.model}</strong></span>
+                    <span>🧪 Analysis: <strong className="mono">{analysis.model_used}</strong></span>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                <button className="btn btn-primary" onClick={onReset}>🔄 تحليل روشتة جديدة</button>
+                <button className="btn btn-outline" onClick={() => window.print()}>🖨️ طباعة</button>
+            </div>
+        </div>
+    );
+};
+
+// ═══ MAIN APP ═══
+const App = () => {
+    const [loading, setLoading] = useState(false);
+    const [step, setStep] = useState(0);
+    const [result, setResult] = useState(null);
+    const [error, setError] = useState("");
+
+    const handleAnalyze = async (file, patientId) => {
+        setLoading(true); setStep(1); setResult(null); setError("");
+
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            if (patientId) fd.append("patient_id", patientId);
+
+            setStep(1);
+            // Small delay to show step 1
+            await new Promise(r => setTimeout(r, 800));
+            setStep(2);
+
+            const res = await fetch(`${API_URL}/medical-files/prescription/analyze`, {
+                method: "POST",
+                headers: { "ngrok-skip-browser-warning": "true" },
+                body: fd,
+            });
+
+            if (!res.ok) {
+                const e = await res.json().catch(() => ({}));
+                throw new Error(e.detail || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            setResult(data);
+        } catch (e) {
+            setError(e.message);
+        } finally {
+            setLoading(false); setStep(0);
+        }
+    };
+
+    const handleReset = () => { setResult(null); setError(""); };
+
+    return (
+        <div>
+            <Header />
+            <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 40px' }}>
+                {!result && !loading && <UploadSection onAnalyze={handleAnalyze} loading={loading} />}
+                {loading && <LoadingState step={step} />}
+                {error && !loading && (
+                    <div className="card fade-up" style={{ padding: 30, textAlign: 'center' }}>
+                        <p style={{ fontSize: 32, marginBottom: 10 }}>❌</p>
+                        <p style={{ color: 'var(--red)', fontWeight: 700, marginBottom: 8 }}>{error}</p>
+                        <button className="btn btn-primary" onClick={handleReset}>🔄 حاول تاني</button>
+                    </div>
+                )}
+                {result && !loading && <ResultsView data={result} onReset={handleReset} />}
+            </div>
+        </div>
+    );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
