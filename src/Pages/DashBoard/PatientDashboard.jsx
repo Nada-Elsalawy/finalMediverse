@@ -209,7 +209,7 @@ export default function PatientDashboard() {
           <InfoCard icon={<FaIdCard />} title="National id" value={patient.national_id || "N/A"} />
           <InfoCard icon={<FaPhone />} title="Phone number" value={patient.phone_number || "N/A"} />
           <InfoCard icon={<FaVenusMars />} title="Age & Gender" value={`${calculateAge(patient.date_of_birth)} yrs, ${patient.gender || "N/A"}`} />
-          <InfoCard icon={<FaBirthdayCake />} title="Date of birth" value={patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString() : "N/A"} />
+          <InfoCard icon={<FaBirthdayCake />} title="Date of birth" value={patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString("en-GB") : "N/A"} />
           
           <InfoCard icon={<FaTint />} title="Blood Type" value={patient.blood_type || "N/A"} />
           <InfoCard icon={<FaRulerCombined />} title="Height & Weight" value={patient.height && patient.weight ? `${patient.height} cm / ${patient.weight} kg` : "Not recorded"} />
